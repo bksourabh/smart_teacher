@@ -14,6 +14,8 @@ async def get_config():
         claude_model=settings.claude_model,
         temperature=settings.temperature,
         max_tokens=settings.max_tokens,
+        learning_mode_enabled=settings.learning_mode_enabled,
+        confidence_threshold=settings.confidence_threshold,
     )
 
 
@@ -31,6 +33,10 @@ async def update_config(data: ConfigUpdate):
         settings.temperature = data.temperature
     if data.max_tokens is not None:
         settings.max_tokens = data.max_tokens
+    if data.learning_mode_enabled is not None:
+        settings.learning_mode_enabled = data.learning_mode_enabled
+    if data.confidence_threshold is not None:
+        settings.confidence_threshold = data.confidence_threshold
 
     return ConfigResponse(
         weight_manas=settings.weight_manas,
@@ -39,4 +45,6 @@ async def update_config(data: ConfigUpdate):
         claude_model=settings.claude_model,
         temperature=settings.temperature,
         max_tokens=settings.max_tokens,
+        learning_mode_enabled=settings.learning_mode_enabled,
+        confidence_threshold=settings.confidence_threshold,
     )

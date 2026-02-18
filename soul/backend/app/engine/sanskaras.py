@@ -25,7 +25,8 @@ class SanskarasModule(BaseModule):
                     "\n\nActivated habits from experience:\n" + "\n".join(habit_lines)
                 )
 
-            augmented_message = user_message + habits_context
+            learnings_ctx = await self.build_learnings_context(user_message, "sanskaras")
+            augmented_message = user_message + habits_context + learnings_ctx
             data = await self.call_claude_json(augmented_message)
 
             return SanskaraOutput(

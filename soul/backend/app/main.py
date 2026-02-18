@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.models.database import init_db
+import app.models.learning_model  # noqa: F401 — register table before init_db
 from app.api.v1.router import api_router
 from app.seed.seed_data import seed_habits_if_empty
 

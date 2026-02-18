@@ -25,6 +25,33 @@ class ConfigUpdate(BaseModel):
     claude_model: Optional[str] = None
     temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
     max_tokens: Optional[int] = Field(None, ge=100, le=4096)
+    learning_mode_enabled: Optional[bool] = None
+    confidence_threshold: Optional[float] = Field(None, ge=0.0, le=1.0)
+
+
+class TrainerGuidanceRequest(BaseModel):
+    guidance: str = Field(..., min_length=1)
+    application_note: str = Field(..., min_length=1)
+    modules_informed: str = Field(default="all")
+    confidence_boost: float = Field(default=0.5, ge=0.0, le=1.0)
+
+
+class TrainerLearningCreate(BaseModel):
+    trigger_summary: str = Field(..., min_length=1)
+    question_context: str = ""
+    keywords: str = Field(..., min_length=1)
+    guidance: str = Field(..., min_length=1)
+    application_note: str = Field(..., min_length=1)
+    modules_informed: str = Field(default="all")
+    confidence_boost: float = Field(default=0.5, ge=0.0, le=1.0)
+
+
+class TrainerLearningUpdate(BaseModel):
+    guidance: Optional[str] = None
+    application_note: Optional[str] = None
+    modules_informed: Optional[str] = None
+    confidence_boost: Optional[float] = Field(None, ge=0.0, le=1.0)
+    keywords: Optional[str] = None
 
 
 # --- Response Models ---
@@ -56,12 +83,20 @@ class SynthesisOutput(BaseModel):
     weights: dict[str, float]
 
 
+class TrainerConsultationNeeded(BaseModel):
+    learning_id: int
+    trigger_summary: str
+    question_context: str
+
+
 class ChatResponse(BaseModel):
     manas: ManaOutput
     buddhi: BuddhiOutput
     sanskaras: SanskaraOutput
     synthesis: SynthesisOutput
     elapsed_ms: int
+    mode: str = "autonomous"
+    trainer_needed: Optional[TrainerConsultationNeeded] = None
 
 
 class HabitResponse(BaseModel):
@@ -76,6 +111,19 @@ class HabitResponse(BaseModel):
     valence: float
 
 
+class LearningResponse(BaseModel):
+    id: int
+    trigger_summary: str
+    question_context: str
+    guidance: str
+    application_note: str
+    modules_informed: str
+    keywords: str
+    confidence_boost: float
+    times_applied: int
+    status: str
+
+
 class ConfigResponse(BaseModel):
     weight_manas: float
     weight_buddhi: float
@@ -83,6 +131,8 @@ class ConfigResponse(BaseModel):
     claude_model: str
     temperature: float
     max_tokens: int
+    learning_mode_enabled: bool
+    confidence_threshold: float
 
 
 class HealthResponse(BaseModel):

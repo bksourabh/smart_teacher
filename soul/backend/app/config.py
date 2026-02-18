@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     max_tokens: int = Field(default=1024, description="Max tokens per Claude call")
     temperature: float = Field(default=0.7, description="Temperature for Claude calls")
 
+    # Learning mode
+    learning_mode_enabled: bool = Field(default=False, description="Enable trainer learning mode")
+    confidence_threshold: float = Field(default=0.4, description="Below this, soul asks for trainer help")
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 

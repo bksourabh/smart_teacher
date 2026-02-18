@@ -1,7 +1,12 @@
 import * as readline from "readline";
 import chalk from "chalk";
 import { ApiClient } from "./api-client";
-import { displayResponse, displayError, displayInfo } from "./display";
+import {
+  displayResponse,
+  displayError,
+  displayInfo,
+  displayTrainerNeeded,
+} from "./display";
 
 export async function startRepl(client: ApiClient): Promise<void> {
   const healthy = await client.health();
@@ -81,7 +86,11 @@ export async function startRepl(client: ApiClient): Promise<void> {
         // Chat
         console.log(chalk.gray("\nThinking..."));
         const response = await client.chat(trimmed);
-        displayResponse(response);
+        if (response.mode === "needs_trainer") {
+          displayTrainerNeeded(response);
+        } else {
+          displayResponse(response);
+        }
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : "Unknown error";

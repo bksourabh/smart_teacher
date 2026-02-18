@@ -29,12 +29,50 @@ export interface SynthesisOutput {
   weights: Record<string, number>;
 }
 
+export interface TrainerConsultationNeeded {
+  learning_id: number;
+  trigger_summary: string;
+  question_context: string;
+}
+
 export interface ChatResponse {
   manas: ManasOutput;
   buddhi: BuddhiOutput;
   sanskaras: SanskaraOutput;
   synthesis: SynthesisOutput;
   elapsed_ms: number;
+  mode: "autonomous" | "needs_trainer";
+  trainer_needed?: TrainerConsultationNeeded;
+}
+
+export interface LearningResponse {
+  id: number;
+  trigger_summary: string;
+  question_context: string;
+  guidance: string;
+  application_note: string;
+  modules_informed: string;
+  keywords: string;
+  confidence_boost: number;
+  times_applied: number;
+  status: string;
+}
+
+export interface TrainerGuidanceRequest {
+  guidance: string;
+  application_note: string;
+  modules_informed?: string;
+  confidence_boost?: number;
+}
+
+export interface TrainerLearningCreate {
+  trigger_summary: string;
+  question_context?: string;
+  keywords: string;
+  guidance: string;
+  application_note: string;
+  modules_informed?: string;
+  confidence_boost?: number;
 }
 
 export interface HabitResponse {
@@ -56,6 +94,8 @@ export interface ConfigResponse {
   claude_model: string;
   temperature: number;
   max_tokens: number;
+  learning_mode_enabled: boolean;
+  confidence_threshold: number;
 }
 
 export interface SoulConfig {

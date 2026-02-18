@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { loadConfig, saveConfig } from "./config";
 import { ApiClient } from "./api-client";
 import { startRepl } from "./cli";
+import { startTrainerRepl } from "./trainer-cli";
 
 const program = new Command();
 
@@ -22,6 +23,20 @@ program
     }
     const client = new ApiClient(config.backendUrl);
     await startRepl(client);
+  });
+
+program
+  .command("train")
+  .description("Start trainer mode to guide the soul")
+  .option("-u, --url <url>", "Backend URL")
+  .action(async (opts) => {
+    const config = loadConfig();
+    if (opts.url) {
+      config.backendUrl = opts.url;
+      saveConfig(config);
+    }
+    const client = new ApiClient(config.backendUrl);
+    await startTrainerRepl(client);
   });
 
 program

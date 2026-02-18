@@ -8,7 +8,9 @@ class BuddhiModule(BaseModule):
 
     async def process(self, user_message: str, **kwargs) -> BuddhiOutput:
         try:
-            data = await self.call_claude_json(user_message)
+            learnings_ctx = await self.build_learnings_context(user_message, "buddhi")
+            augmented = user_message + learnings_ctx
+            data = await self.call_claude_json(augmented)
             return BuddhiOutput(
                 response=data.get("response", ""),
                 confidence=max(0.0, min(1.0, data.get("confidence", 0.5))),

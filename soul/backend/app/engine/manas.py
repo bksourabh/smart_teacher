@@ -8,7 +8,9 @@ class ManasModule(BaseModule):
 
     async def process(self, user_message: str, **kwargs) -> ManaOutput:
         try:
-            data = await self.call_claude_json(user_message)
+            learnings_ctx = await self.build_learnings_context(user_message, "manas")
+            augmented = user_message + learnings_ctx
+            data = await self.call_claude_json(augmented)
             return ManaOutput(
                 response=data.get("response", ""),
                 confidence=max(0.0, min(1.0, data.get("confidence", 0.5))),

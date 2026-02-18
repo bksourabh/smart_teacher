@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { ChatResponse } from "./types";
+import { ChatResponse, LearningResponse } from "./types";
 
 const SEPARATOR = chalk.gray("━".repeat(40));
 
@@ -75,4 +75,51 @@ export function displayError(message: string): void {
 
 export function displayInfo(message: string): void {
   console.log(chalk.blue(`\n${message}\n`));
+}
+
+export function displayTrainerNeeded(res: ChatResponse): void {
+  console.log();
+  console.log(SEPARATOR);
+  console.log(chalk.yellowBright.bold("  Soul needs trainer guidance"));
+  console.log(SEPARATOR);
+  console.log();
+
+  if (res.trainer_needed) {
+    console.log(chalk.yellow(`  Question: ${res.trainer_needed.trigger_summary}`));
+    console.log(chalk.gray(`  Context: "${res.trainer_needed.question_context}"`));
+    console.log(chalk.gray(`  Learning ID: ${res.trainer_needed.learning_id}`));
+  }
+
+  console.log();
+  console.log(
+    chalk.yellowBright(
+      "  Use the trainer mode to provide guidance: npm start -- train"
+    )
+  );
+  console.log();
+  console.log(
+    SEPARATOR +
+      chalk.gray(` ${res.elapsed_ms}ms `) +
+      SEPARATOR
+  );
+  console.log();
+}
+
+export function displayLearning(l: LearningResponse): void {
+  const statusColor =
+    l.status === "active" ? chalk.green : l.status === "pending" ? chalk.yellow : chalk.gray;
+  console.log(
+    `  ${chalk.bold(`#${l.id}`)} ${statusColor(`[${l.status}]`)} ${l.trigger_summary}`
+  );
+  if (l.guidance) {
+    console.log(chalk.gray(`    Guidance: ${l.guidance}`));
+  }
+  if (l.application_note) {
+    console.log(chalk.gray(`    Note: ${l.application_note}`));
+  }
+  console.log(
+    chalk.gray(
+      `    Keywords: ${l.keywords} | Modules: ${l.modules_informed} | Boost: ${l.confidence_boost} | Applied: ${l.times_applied}x`
+    )
+  );
 }
