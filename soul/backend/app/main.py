@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.models.database import init_db
 import app.models.learning_model  # noqa: F401 — register table before init_db
@@ -32,3 +34,8 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix="/api/v1")
+
+# Serve the web UI static files if the build exists
+_web_dist = Path(__file__).parent.parent.parent.parent / "frontend" / "web" / "dist"
+if _web_dist.exists():
+    app.mount("/", StaticFiles(directory=str(_web_dist), html=True), name="web-ui")

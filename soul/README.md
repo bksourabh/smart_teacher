@@ -49,13 +49,30 @@ uvicorn app.main:app --reload
 
 The backend starts at `http://localhost:8000`. Seven child-like essence habits are seeded automatically on first startup.
 
-### Frontend Setup
+### Frontend Setup — CLI
 
 ```bash
 cd frontend
 npm install
 npm start           # Start chat mode
 npm start -- train  # Start trainer mode
+```
+
+### Frontend Setup — Web UI
+
+A Vite + Lit web interface that streams faculty outputs progressively as each module completes.
+
+```bash
+cd frontend/web
+npm install
+npm run dev         # Start dev server at http://localhost:5173
+```
+
+Or build for production (served by the FastAPI backend at `/`):
+
+```bash
+cd frontend/web
+npm run build       # Outputs to frontend/web/dist/
 ```
 
 ### Verify

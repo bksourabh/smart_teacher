@@ -2,14 +2,56 @@
 
 ## System Overview
 
-Soul AI uses a client-server architecture with a Node.js CLI frontend and a Python FastAPI backend. The soul processes every message through three parallel cognitive modules, then either synthesizes autonomously or consults a trainer when uncertain.
+Soul AI uses a client-server architecture with a Python FastAPI backend and two frontend options: the original Node.js CLI and a Vite + Lit web UI. The soul processes every message through three parallel cognitive modules, then either synthesizes autonomously or consults a trainer when uncertain.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     Frontends                           │
+│                                                         │
+│   Node.js CLI           Web UI (Vite + Lit)             │
+│   (Commander/Chalk)     localhost:5173                  │
+│                                                         │
+│   REST: POST /chat      SSE: POST /chat/stream          │
+└───────────────────────────┬─────────────────────────────┘
+                            │
+                   ┌────────▼────────┐
+                   │  FastAPI Backend │
+                   │  localhost:8000  │
+                   └────────┬────────┘
+                            │
+                   ┌────────▼────────┐
+                   │   Soul Engine   │
+                   └────────┬────────┘
+                            │
+           ┌────────────────┼────────────────┐
+           │                │                │
+      ┌────▼────┐     ┌─────▼────┐     ┌────▼──────┐
+      │  MANAS  │     │  BUDDHI  │     │ SANSKARAS │
+      │  (Mind) │     │(Intellect│     │ (Habits)  │
+      └────┬────┘     └─────┬────┘     └────┬──────┘
+           │                │                │
+           └────────────────┼────────────────┘
+                            │
+                   ┌────────▼────────┐
+                   │  Confidence     │
+                   │  Gate           │
+                   └────────┬────────┘
+                            │
+               ┌────────────┴────────────┐
+          autonomous               needs_trainer
+               │                        │
+      ┌────────▼────────┐     ┌─────────▼────────┐
+      │  Synthesizer    │     │  Pending Learning │
+      │  (Atman)        │     │  Created in DB    │
+      └─────────────────┘     └──────────────────┘
+```
 
 ## Request Flow
 
 ### Autonomous Mode (default)
 
-1. User types a message in the CLI
-2. CLI sends `POST /api/v1/chat` to the backend
+1. User sends a message via the CLI or Web UI
+2. Client sends `POST /api/v1/chat` (full response) or `POST /api/v1/chat/stream` (SSE) to the backend
 3. **Soul Engine** dispatches to all three modules in parallel via `asyncio.gather`
 4. Each module:
    - Queries the **Learnings DB** for relevant active learnings (keyword matching)
@@ -20,7 +62,7 @@ Soul AI uses a client-server architecture with a Node.js CLI frontend and a Pyth
 7. If confidence >= threshold (or learning mode is off): proceed to synthesis
 8. **Synthesizer** makes a 4th Claude call to blend all perspectives
 9. Response returned with `mode: "autonomous"`
-10. CLI displays formatted, color-coded output
+10. Client displays output (CLI: color-coded text; Web UI: streamed faculty cards)
 
 ### Learning Mode (needs_trainer)
 
@@ -123,6 +165,18 @@ The orchestrator that:
 3. Decides between autonomous response and trainer consultation
 4. Creates pending learnings when uncertain (lightweight Claude call)
 5. Returns the complete `ChatResponse` with mode flag
+
+### Streaming Engine (`streaming_engine.py`)
+
+An SSE-based variant of the Soul Engine used by the Web UI:
+1. Launches all three modules as concurrent `asyncio` tasks
+2. Uses an `asyncio.Queue` to receive module results as they complete
+3. Yields each faculty's output immediately as an SSE event (`manas`, `buddhi`, `sanskaras`)
+4. Yields `confidence` event after all three complete
+5. Yields `synthesis` event (Atman's response) or `needs_trainer` event
+6. Yields `done` to close the stream
+
+This means the Web UI renders each faculty card **as it finishes** rather than waiting for all three — total latency is still `max(module_latency)` but perceived latency is reduced because partial results appear progressively.
 
 ## Data Models
 
@@ -228,6 +282,23 @@ Runtime-configurable settings (in-memory, no restart needed):
 - Typical response time: 3-6 seconds depending on Claude model
 - Learnings keyword matching is in-memory (all active learnings loaded per request) — suitable for hundreds of learnings
 
+## Frontends
+
+### CLI (`frontend/`)
+
+The original interface. TypeScript + Commander.js + Chalk. Sends `POST /chat` and displays color-coded output with module confidence scores. Trainer mode available via `npm start -- train`.
+
+### Web UI (`frontend/web/`)
+
+A Vite + Lit (Web Components) interface, architecturally modelled on modern chat UIs. Key design choices:
+
+- **LitElement** components — `soul-app` as root, six sub-components for faculties, synthesis, trainer, habits, and config
+- **SSE streaming** via `POST /chat/stream` — each faculty card renders as its module completes, rather than all at once
+- **Synthesis (Atman) is primary** — displayed prominently at the top; faculty cards are secondary/collapsible
+- **Four tabs**: Chat, Trainer (Guru-Shishya), Habits (Sanskaras), Config
+- **Chakra-inspired palette**: Manas=Purple, Buddhi=Cyan, Sanskaras=Green, Atman=Amber
+- Built output (`npm run build`) is served by FastAPI at `/` when `frontend/web/dist/` exists
+
 ## Technology Stack
 
 | Component | Technology |
@@ -235,5 +306,8 @@ Runtime-configurable settings (in-memory, no restart needed):
 | Backend framework | FastAPI (Python 3.11+) |
 | Database | SQLite via SQLAlchemy async + aiosqlite |
 | AI model | Anthropic Claude (configurable model) |
-| Frontend | TypeScript + Commander CLI + Chalk |
-| HTTP client | Axios |
+| CLI frontend | TypeScript + Commander CLI + Chalk |
+| Web UI framework | Vite + Lit 3 (Web Components) + TypeScript |
+| Streaming | Server-Sent Events (SSE) via `StreamingResponse` |
+| HTTP client (CLI) | Axios |
+| Static file serving | FastAPI `StaticFiles` (aiofiles) |

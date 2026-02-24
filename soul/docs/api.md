@@ -6,6 +6,60 @@ Base URL: `http://localhost:8000/api/v1`
 
 ## Core Endpoints
 
+### POST /chat/stream  *(Web UI — SSE)*
+
+Streaming variant of `/chat`. Returns a `text/event-stream` response that emits events as each faculty completes. Used by the Vite + Lit web UI for progressive rendering.
+
+**Request:** Same as `POST /chat`
+```json
+{ "message": "Should I quit my job to start a business?" }
+```
+
+**SSE Event sequence:**
+
+```
+event: start
+data: {"message": "Should I...", "timestamp": 1740000000.0}
+
+event: manas
+data: {"module": "manas", "response": "There's excitement...", "confidence": 0.70, "valence": 0.30}
+
+event: buddhi
+data: {"module": "buddhi", "response": "Consider 12 months savings...", "confidence": 0.85, "reasoning_chain": [...]}
+
+event: sanskaras
+data: {"module": "sanskaras", "response": "The essence of curiosity...", "confidence": 0.60, "activated_habits": [...]}
+
+event: confidence
+data: {"weighted": 0.745, "threshold": 0.4, "learning_mode": false}
+
+event: synthesis
+data: {"response": "This is a moment of genuine reflection...", "weights": {...}, "mode": "autonomous", "elapsed_ms": 4231}
+
+event: done
+data: {"elapsed_ms": 4231}
+```
+
+**Alternative: needs_trainer path** (when `learning_mode_enabled=true` and confidence < threshold):
+
+```
+event: needs_trainer
+data: {"learning_id": 1, "trigger_summary": "How should I...", "question_context": "...", "elapsed_ms": 2100}
+
+event: done
+data: {"elapsed_ms": 2100}
+```
+
+**Error event** (if a module fails):
+```
+event: error
+data: {"module": "manas", "error": "API timeout"}
+```
+
+> The `manas`, `buddhi`, and `sanskaras` events arrive in **completion order** (whichever finishes first), not fixed order. This allows the UI to render each faculty progressively.
+
+---
+
 ### POST /chat
 
 Main interaction endpoint. Processes input through all three modules. In learning mode, may return a trainer consultation request instead of a synthesized response.
@@ -385,3 +439,21 @@ Supersede (soft-delete) a learning. Sets status to `superseded` — it will no l
 | `confidence_boost` | float | 0.0 to 1.0 |
 | `times_applied` | integer | Usage counter |
 | `status` | string | `pending` / `active` / `superseded` |
+
+---
+
+## SSE Stream Event Reference
+
+All events from `POST /chat/stream` follow the `text/event-stream` format.
+
+| Event | When | Data fields |
+|-------|------|-------------|
+| `start` | Immediately | `message`, `timestamp` |
+| `manas` | Manas module completes | `module`, `response`, `confidence`, `valence` |
+| `buddhi` | Buddhi module completes | `module`, `response`, `confidence`, `reasoning_chain[]` |
+| `sanskaras` | Sanskaras module completes | `module`, `response`, `confidence`, `activated_habits[]` |
+| `confidence` | All 3 modules done | `weighted`, `threshold`, `learning_mode` |
+| `synthesis` | Atman synthesizes | `response`, `weights`, `mode`, `elapsed_ms` |
+| `needs_trainer` | Confidence below threshold (learning mode on) | `learning_id`, `trigger_summary`, `question_context`, `elapsed_ms` |
+| `done` | Stream complete | `elapsed_ms` |
+| `error` | Module or synthesis failure | `module` (optional), `error` |
