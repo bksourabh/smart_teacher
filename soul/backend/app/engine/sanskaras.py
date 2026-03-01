@@ -1,13 +1,14 @@
 from app.engine.base_module import BaseModule
 from app.models.schemas import SanskaraOutput
 from app.services.habit_service import habit_service
+from app.services.claude_client import TokenUsageData
 
 
 class SanskarasModule(BaseModule):
     def __init__(self):
         super().__init__("sanskaras.txt")
 
-    async def process(self, user_message: str, **kwargs) -> SanskaraOutput:
+    async def process(self, user_message: str, **kwargs) -> tuple[SanskaraOutput, TokenUsageData]:
         try:
             # Retrieve relevant habits
             habits = await habit_service.find_relevant_habits(user_message, limit=5)
@@ -27,16 +28,16 @@ class SanskarasModule(BaseModule):
 
             learnings_ctx = await self.build_learnings_context(user_message, "sanskaras")
             augmented_message = user_message + habits_context + learnings_ctx
-            data = await self.call_claude_json(augmented_message)
+            data, usage = await self.call_claude_json(augmented_message)
 
             return SanskaraOutput(
                 response=data.get("response", ""),
                 confidence=max(0.0, min(1.0, data.get("confidence", 0.5))),
                 activated_habits=data.get("activated_habits", []),
-            )
+            ), usage
         except Exception as e:
             return SanskaraOutput(
                 response=f"Sanskaras encountered static: {e}",
                 confidence=0.1,
                 activated_habits=[],
-            )
+            ), TokenUsageData()

@@ -1,5 +1,6 @@
 from app.engine.base_module import BaseModule
 from app.models.schemas import ManaOutput, BuddhiOutput, SanskaraOutput, SynthesisOutput
+from app.services.claude_client import TokenUsageData
 from app.config import settings
 
 
@@ -14,7 +15,7 @@ class Synthesizer(BaseModule):
         buddhi: BuddhiOutput,
         sanskaras: SanskaraOutput,
         **kwargs,
-    ) -> SynthesisOutput:
+    ) -> tuple[SynthesisOutput, TokenUsageData]:
         weights = {
             "manas": settings.weight_manas,
             "buddhi": settings.weight_buddhi,
@@ -39,10 +40,14 @@ Activated habits: {', '.join(h.get('name', '') for h in sanskaras.activated_habi
 Synthesize these into a unified, wise response. Honor all three voices proportional to their weights."""
 
         try:
-            response_text = await self.call_claude(synthesis_prompt)
-            return SynthesisOutput(response=response_text, weights=weights)
+            result = await self.call_claude(
+                synthesis_prompt,
+                model=settings.synthesis_model,
+                max_tokens=settings.synthesis_max_tokens,
+            )
+            return SynthesisOutput(response=result.text, weights=weights), result.usage
         except Exception as e:
             return SynthesisOutput(
                 response=f"The soul struggles to integrate: {e}",
                 weights=weights,
-            )
+            ), TokenUsageData()

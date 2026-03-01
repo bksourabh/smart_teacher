@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from app.services.claude_client import claude_client
+from app.services.claude_client import claude_client, TokenUsageData
 from app.services.learning_service import learning_service
+from app.config import settings
 
 
 class BaseModule(ABC):
@@ -14,16 +15,22 @@ class BaseModule(ABC):
     async def process(self, user_message: str, **kwargs) -> dict:
         pass
 
-    async def call_claude_json(self, user_message: str) -> dict:
+    async def call_claude_json(self, user_message: str) -> tuple[dict, TokenUsageData]:
+        """Return (parsed_json, token_usage) using faculty model and token limits."""
         return await claude_client.complete_json(
             system_prompt=self.system_prompt,
             user_message=user_message,
+            model=settings.faculty_model,
+            max_tokens=settings.faculty_max_tokens,
         )
 
-    async def call_claude(self, user_message: str) -> str:
+    async def call_claude(self, user_message: str, model: str | None = None, max_tokens: int | None = None):
+        """Return CompletionResult with text and usage."""
         return await claude_client.complete(
             system_prompt=self.system_prompt,
             user_message=user_message,
+            model=model,
+            max_tokens=max_tokens,
         )
 
     async def build_learnings_context(self, message: str, module_name: str) -> str:

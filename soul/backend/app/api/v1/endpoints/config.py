@@ -5,8 +5,7 @@ from app.config import settings
 router = APIRouter()
 
 
-@router.get("/config", response_model=ConfigResponse)
-async def get_config():
+def _build_config_response() -> ConfigResponse:
     return ConfigResponse(
         weight_manas=settings.weight_manas,
         weight_buddhi=settings.weight_buddhi,
@@ -14,9 +13,19 @@ async def get_config():
         claude_model=settings.claude_model,
         temperature=settings.temperature,
         max_tokens=settings.max_tokens,
+        faculty_model=settings.faculty_model,
+        synthesis_model=settings.synthesis_model,
+        faculty_max_tokens=settings.faculty_max_tokens,
+        synthesis_max_tokens=settings.synthesis_max_tokens,
+        combined_mode=settings.combined_mode,
         learning_mode_enabled=settings.learning_mode_enabled,
         confidence_threshold=settings.confidence_threshold,
     )
+
+
+@router.get("/config", response_model=ConfigResponse)
+async def get_config():
+    return _build_config_response()
 
 
 @router.put("/config", response_model=ConfigResponse)
@@ -33,18 +42,19 @@ async def update_config(data: ConfigUpdate):
         settings.temperature = data.temperature
     if data.max_tokens is not None:
         settings.max_tokens = data.max_tokens
+    if data.faculty_model is not None:
+        settings.faculty_model = data.faculty_model
+    if data.synthesis_model is not None:
+        settings.synthesis_model = data.synthesis_model
+    if data.faculty_max_tokens is not None:
+        settings.faculty_max_tokens = data.faculty_max_tokens
+    if data.synthesis_max_tokens is not None:
+        settings.synthesis_max_tokens = data.synthesis_max_tokens
+    if data.combined_mode is not None:
+        settings.combined_mode = data.combined_mode
     if data.learning_mode_enabled is not None:
         settings.learning_mode_enabled = data.learning_mode_enabled
     if data.confidence_threshold is not None:
         settings.confidence_threshold = data.confidence_threshold
 
-    return ConfigResponse(
-        weight_manas=settings.weight_manas,
-        weight_buddhi=settings.weight_buddhi,
-        weight_sanskaras=settings.weight_sanskaras,
-        claude_model=settings.claude_model,
-        temperature=settings.temperature,
-        max_tokens=settings.max_tokens,
-        learning_mode_enabled=settings.learning_mode_enabled,
-        confidence_threshold=settings.confidence_threshold,
-    )
+    return _build_config_response()

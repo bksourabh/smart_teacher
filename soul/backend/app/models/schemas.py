@@ -25,6 +25,11 @@ class ConfigUpdate(BaseModel):
     claude_model: Optional[str] = None
     temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
     max_tokens: Optional[int] = Field(None, ge=100, le=4096)
+    faculty_model: Optional[str] = None
+    synthesis_model: Optional[str] = None
+    faculty_max_tokens: Optional[int] = Field(None, ge=100, le=2048)
+    synthesis_max_tokens: Optional[int] = Field(None, ge=100, le=2048)
+    combined_mode: Optional[bool] = None
     learning_mode_enabled: Optional[bool] = None
     confidence_threshold: Optional[float] = Field(None, ge=0.0, le=1.0)
 
@@ -83,6 +88,14 @@ class SynthesisOutput(BaseModel):
     weights: dict[str, float]
 
 
+class TokenUsage(BaseModel):
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cache_read_input_tokens: int = 0
+    cache_creation_input_tokens: int = 0
+    total_tokens: int = 0
+
+
 class TrainerConsultationNeeded(BaseModel):
     learning_id: int
     trigger_summary: str
@@ -97,6 +110,7 @@ class ChatResponse(BaseModel):
     elapsed_ms: int
     mode: str = "autonomous"
     trainer_needed: Optional[TrainerConsultationNeeded] = None
+    token_usage: Optional[TokenUsage] = None
 
 
 class HabitResponse(BaseModel):
@@ -131,6 +145,11 @@ class ConfigResponse(BaseModel):
     claude_model: str
     temperature: float
     max_tokens: int
+    faculty_model: str
+    synthesis_model: str
+    faculty_max_tokens: int
+    synthesis_max_tokens: int
+    combined_mode: bool
     learning_mode_enabled: bool
     confidence_threshold: float
 
